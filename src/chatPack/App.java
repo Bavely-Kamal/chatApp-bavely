@@ -140,7 +140,7 @@ public class App {
      * eg (all user stories) and delete it from database before the user open his UI
      */
     void checkGarbage(/*Your parameters here */) {
-fefegw gwvl[pge p[w p[vkkpew[kew 
+
     }
 
     /**
