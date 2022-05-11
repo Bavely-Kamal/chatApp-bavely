@@ -148,9 +148,46 @@ public class App {
      * For each user check his connection list and expand all his connections as a 2 members chat list
      * and for each chat the name of it and the last message was sent
      */
-    void expandConnectionChats(/*Your parameters here */) {
-
+       void expandConnectionChats(int userId) throws SQLException{
+        query = "select chatId from userJoinChat where userId = ?";
+        preQuery = con.prepareStatement(query);
+        preQuery.setInt(1, userId);
+        result = preQuery.executeQuery();
+        ArrayList<ChatRoom> chatRooms = new ArrayList<ChatRoom>();
+        while (result.next()){
+            query = "select id, name from chatRoom where id = ?";
+            preQuery = con.prepareStatement(query);
+            preQuery.setInt(1, result.getInt(1));
+            ResultSet tmpResult = preQuery.executeQuery();
+            tmpResult.next();
+            chatRooms.add(new ChatRoom(tmpResult.getInt(1), tmpResult.getString(2)));
+        }
+        Queue<ChatRoom> firstOccurredChat = new LinkedList<ChatRoom>();
+        query = "select chatId, messageText, time from message order by date desc , time desc";
+        preQuery = con.prepareStatement(query);
+        result = preQuery.executeQuery();
+        while (result.next()){
+            int tmpChatIdSave = result.getInt(1);
+            for (int i = 0; i < chatRooms.size(); i++){
+                ChatRoom currentChat = chatRooms.get(i);
+                if (!currentChat.flag && currentChat.getId() == tmpChatIdSave){
+                    currentChat.flag = true;
+                    currentChat.setLastMessageSent(result.getString(2));
+                    firstOccurredChat.add(currentChat);
+                    break;
+                }
+            }
+        }
+        for (int i = 0; i < chatRooms.size(); i++)
+            if (!chatRooms.get(i).flag)
+                firstOccurredChat.add(chatRooms.get(i));
+        while (!firstOccurredChat.isEmpty()){
+            System.out.println("______________________\n" + firstOccurredChat.peek().getName() + "\n" + firstOccurredChat.peek().getLastMessageSent() +
+                    "\n _______________________\n");
+            firstOccurredChat.poll();
+        }
     }
+
 
     /**
      * Task for : Mohamed Walid && Mohamed Yehia
@@ -244,9 +281,14 @@ public class App {
      * Task for : bavly
      * EDIT : add blocked user to database contact mohamed walid
      */
-    void blockUser(/*Your parameters here */) {
-
+     void blockUser(User user) throws SQLException {
+        query ="update UserJoinChat set blocked  = false where UserId = ? and ChatId = ?" ;
+        preQuery = con.prepareStatement(query);
+        preQuery.setInt(1, user.getId());
+        preQuery.setInt(2, user.getCurrentChatId());
+       System.out.println("User han been blocked");
     }
+
 
     /**
      * Task for : Mohamed Yehia using hash table
@@ -265,8 +307,33 @@ public class App {
     /**
      * Task for : mohamed mamdouh && bavley ,, using hash table
      */
-    void searchForConnectionByName() {
+   void searchForConnectionByName(int userId, String friendName) throws SQLException {
+        System.out.println("search by name: \n");
+        query = "select * from userconnection where userId= ?";
+        preQuery = con.prepareStatement(query);
+        preQuery.setInt(1, userId);
+        result = preQuery.executeQuery();
+        Hashtable<Num, Name> search = new Hashtable<Num, Name>();
+        while (result.next()) {
+            query = "select id, username, phoneNumber, password, profileDesc, profileVisibility from user where id = ? ";
+            preQuery = con.prepareStatement(query);
+            preQuery.setInt(1, result.getInt(2));
+            ResultSet TmpResult = preQuery.executeQuery();
+            TmpResult.next();
+            search.put(TmpResult.getInt(1), new Name(TmpResult.getInt(1), TmpResult.getString(3), TmpResult.getString(3), TmpResult.getString(4),
+                    TmpResult.getString(5), TmpResult.getBoolean(6)));
+        }
+        Enumeration<Num> e = search.keys();
+        ArrayList<Num> Save = new ArrayList<Num>();
+        while (e.hasMoreElements())
+            Save.add(e.nextElement());
 
+        for (int i = Save.size() - 1; i >= 0; i--) {
+            Name friend = search.get(Save.get(i));
+            if (friend.getUsername().contains(friendName)) {
+                System.out.println(friend.getUsername());
+            }
+        }
     }
 
     /**
